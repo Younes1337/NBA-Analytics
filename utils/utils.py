@@ -56,7 +56,7 @@ def moneyline_to_probability(moneyline):
             probability = abs(moneyline) / (abs(moneyline) + 100)
         return round(probability, 4)  # Return a decimal probability (e.g., 0.9091)
     except ValueError:
-        return None  # Handle cases where the moneyline is invalid
+        return "N/A"  # Handle cases where the moneyline is invalid
 
 
 # Function to calculate the potential price from the moneyline

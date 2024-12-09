@@ -100,7 +100,6 @@ def display_nba_live_data():
                                 <div style="text-align: left; width: 45%;">
                                     <h3 style="margin: 10px 0; color: #4CAF50;">{home_full_name}</h3>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Score: <strong>{home_score}</strong></p>
-                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Moneyline: <span style="color: {moneyline_color(home_moneyline)};">{home_moneyline}</span></p>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{home_price}</strong></p>
                                 </div>
                                 <div style="text-align: center; font-size: 16px; color: #bbbbbb; width: 10%;">
@@ -109,7 +108,6 @@ def display_nba_live_data():
                                 <div style="text-align: right; width: 45%;">
                                     <h3 style="margin: 10px 0; color: #FF5722;">{away_full_name}</h3>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Score: <strong>{away_score}</strong></p>
-                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Moneyline: <span style="color: {moneyline_color(away_moneyline)};">{away_moneyline}</span></p>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{away_price}</strong></p>
                                 </div>
                             </div>

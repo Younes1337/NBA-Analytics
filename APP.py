@@ -78,10 +78,8 @@ def display_nba_live_data():
                     status = game["gameStatusText"]
                     home_full_name = f"{game['homeTeam']['teamCity']} {home_team}"
                     away_full_name = f"{game['awayTeam']['teamCity']} {away_team}"
-
-                    home_moneyline = money_line_data[money_line_data["Team"] == home_full_name]["bet365"].values
-                    away_moneyline = money_line_data[money_line_data["Team"] == away_full_name]["bet365"].values
-
+                    home_moneyline = moneyline_df[moneyline_df["home"] == home_full_name]["odds.home.moneyLine"].values
+                    away_moneyline = moneyline_df[moneyline_df["away"] == away_full_name]["odds.away.moneyLine"].values
                     home_moneyline = home_moneyline[0] if home_moneyline else "N/A"
                     away_moneyline = away_moneyline[0] if away_moneyline else "N/A"
                     home_price = moneyline_to_probability(home_moneyline)

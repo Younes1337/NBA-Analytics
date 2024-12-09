@@ -1,12 +1,22 @@
 import pandas as pd
 from sbrscrape import Scoreboard
+from datetime import datetime
 
 
 class SbrOddsProvider:
-    def __init__(self):
-        sb = Scoreboard(sport="NBA")
+    def __init__(self):  # Format date to 'YYYY-MM-DD'
+        sb = Scoreboard(sport="NBA")  # Specify the date for today's games
         self.games = sb.games if hasattr(sb, 'games') else []
         self.sportbooks = ["fanduel", "betmgm", "caesars", "draftkings", "bet365"]  # All sportsbooks
+
+    def moneyline_to_implied_probability(self, moneyline):
+        """Convert moneyline odds to implied probability (price between 0 and 1)."""
+        if moneyline > 0:
+            # Positive moneyline odds
+            return 100 / (moneyline + 100)
+        else:
+            # Negative moneyline odds
+            return -moneyline / (-moneyline + 100)
 
     def get_odds(self):
         """Retrieve odds from the games and return as a dictionary."""
@@ -21,13 +31,17 @@ class SbrOddsProvider:
                 away_team_name: {}
             }
 
-            # Loop through all sportsbooks and get the odds for each
+            # Loop through all sportsbooks and get the moneyline, then convert to implied probability (price)
             for sportsbook in self.sportbooks:
                 home_moneyline = game['home_ml'].get(sportsbook, None)
                 away_moneyline = game['away_ml'].get(sportsbook, None)
 
-                game_odds[home_team_name][sportsbook] = home_moneyline
-                game_odds[away_team_name][sportsbook] = away_moneyline
+                # Convert moneyline to implied probability (price)
+                home_price = self.moneyline_to_implied_probability(home_moneyline) if home_moneyline is not None else None
+                away_price = self.moneyline_to_implied_probability(away_moneyline) if away_moneyline is not None else None
+
+                game_odds[home_team_name][sportsbook] = home_price
+                game_odds[away_team_name][sportsbook] = away_price
 
             dict_res[home_team_name + ':' + away_team_name] = game_odds
 
@@ -49,7 +63,7 @@ class SbrOddsProvider:
             if away_team not in teams_data:
                 teams_data[away_team] = {sportsbook: None for sportsbook in self.sportbooks}
 
-            # Set the moneyline odds for each team for each sportsbook
+            # Set the implied probability (price) for each team for each sportsbook
             for sportsbook in self.sportbooks:
                 teams_data[home_team][sportsbook] = details[home_team].get(sportsbook, None)
                 teams_data[away_team][sportsbook] = details[away_team].get(sportsbook, None)
@@ -63,4 +77,3 @@ class SbrOddsProvider:
         # Convert to DataFrame
         df = pd.DataFrame(table_data)
         return df
-

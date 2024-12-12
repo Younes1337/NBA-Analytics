@@ -1,5 +1,5 @@
-import pandas as pd
-from sbrscrape import Scoreboard
+import pandas as pd # type: ignore
+from sbrscrape import Scoreboard # type: ignore
 from datetime import datetime
 
 

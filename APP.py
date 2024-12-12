@@ -1,13 +1,11 @@
-from nba_api.live.nba.endpoints import scoreboard
-import streamlit as st
-from datetime import datetime
-from utils.utils import extract_money_lines, moneyline_to_probability, calculate_price
+import streamlit as st # type: ignore
+from utils.utils import *
 from utils.DataProviders import SbrOddsProvider
-import pytz
 import time
+from Model.prediction import trans_data, extract_game_data
 
 # Set Streamlit page config for better visuals
-st.set_page_config(page_title="NBA Live Scores / Predictions", page_icon="🏀", layout="wide")
+st.set_page_config(page_title="NBA Live Scores", page_icon="🏀", layout="wide")
 
 # Center the title of the app
 st.markdown(
@@ -37,35 +35,27 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Function to fetch live NBA data
-def nba_live_data():
-    games = scoreboard.ScoreBoard()
-    data = games.get_dict()
-    return data
-
-# Function to fetch moneyline data
-def moneyline_data():
-    usa_timezone = pytz.timezone('America/New_York')
-    current_time_usa = datetime.now(usa_timezone)
-    dateStr = current_time_usa.strftime('%Y%m%d')
-    url = "https://site.web.api.espn.com/apis/v2/scoreboard/header"
-    df = extract_money_lines(url, dateStr)
-    return df
 
 # Display live NBA data
 def display_nba_live_data():
     placeholder = st.empty()  # Placeholder for dynamic table updates
 
-    # Get the odds
-    sbr_provider = SbrOddsProvider()
-    odds_df = sbr_provider.get_odds_table()
-    money_line_data = odds_df[['Team', 'bet365']]
-
     while True:  # Continuous refresh
         # Fetch live data
         games_data = nba_live_data()
         moneyline_df = moneyline_data()
+
         games = games_data.get("scoreboard", {}).get("games", [])
+
+        #Fetch sportbooks data 
+        sbr_provider = SbrOddsProvider()
+        odds_df = sbr_provider.get_odds_table()
+        money_line_data = odds_df[['Team', 'bet365']]
+
+        #test ML model 
+        ml_data = extract_game_data()
+        result = trans_data(ml_data)
+        
 
         # Update the placeholder content
         with placeholder.container():
@@ -78,20 +68,20 @@ def display_nba_live_data():
                     status = game["gameStatusText"]
                     home_full_name = f"{game['homeTeam']['teamCity']} {home_team}"
                     away_full_name = f"{game['awayTeam']['teamCity']} {away_team}"
-                    home_moneyline = moneyline_df[moneyline_df["home"] == home_full_name]["odds.home.moneyLine"].values
-                    away_moneyline = moneyline_df[moneyline_df["away"] == away_full_name]["odds.away.moneyLine"].values
-                    home_moneyline = home_moneyline[0] if home_moneyline else "N/A"
-                    away_moneyline = away_moneyline[0] if away_moneyline else "N/A"
-                    home_price = moneyline_to_probability(home_moneyline)
-                    away_price = moneyline_to_probability(away_moneyline)
+                    home_teamTricode = game['homeTeam']['teamTricode']
+                    away_teamTricode = game['awayTeam']['teamTricode']
 
-                    def moneyline_color(moneyline):
-                        if moneyline == "N/A":
-                            return "white"
-                        elif int(moneyline) > 0:
-                            return "green"
-                        else:
-                            return "red"
+                    st.write()
+                    #home_moneyline_array = money_line_data[money_line_data["Team"] == home_full_name]["bet365"].values
+                    #away_moneyline_array = money_line_data[money_line_data["Team"] == away_full_name]["bet365"].values
+
+                    home_moneyline_array = moneyline_df[moneyline_df["home"] == home_full_name]["odds.home.moneyLine"].values
+                    away_moneyline_array = moneyline_df[moneyline_df["away"] == away_full_name]["odds.away.moneyLine"].values
+
+                    # Extract scalar values if they exist
+                    home_moneyline = round(float(home_moneyline_array[0]), 2) if len(home_moneyline_array) > 0 else None
+                    away_moneyline = round(float(away_moneyline_array[0]), 2) if len(away_moneyline_array) > 0 else None
+
 
                     st.markdown(
                         f"""
@@ -100,7 +90,8 @@ def display_nba_live_data():
                                 <div style="text-align: left; width: 45%;">
                                     <h3 style="margin: 10px 0; color: #4CAF50;">{home_full_name}</h3>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Score: <strong>{home_score}</strong></p>
-                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{home_price}</strong></p>
+                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{home_moneyline}</strong></p>
+                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Win Probability: <strong>{f"{result[result['HomeName'] == home_teamTricode]['predicted_home_win_probability'].iloc[0] * 100:.1f}%" if result is not None and not result[result['HomeName'] == home_teamTricode].empty else "0.0%"}</strong></p>
                                 </div>
                                 <div style="text-align: center; font-size: 16px; color: #bbbbbb; width: 10%;">
                                     <p style="margin: 0; font-weight: bold; color: #FFD700;">{status}</p>
@@ -108,7 +99,8 @@ def display_nba_live_data():
                                 <div style="text-align: right; width: 45%;">
                                     <h3 style="margin: 10px 0; color: #FF5722;">{away_full_name}</h3>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Score: <strong>{away_score}</strong></p>
-                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{away_price}</strong></p>
+                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{away_moneyline}</strong></p>
+                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Win Probability: <strong>{f"{result[result['HomeName'] == home_teamTricode]['predicted_away_win_probability'].iloc[0] * 100:.1f}%" if result is not None and not result[result['HomeName'] == home_teamTricode].empty else "0.0%"}</strong></p>
                                 </div>
                             </div>
                         </div>
@@ -127,6 +119,7 @@ def display_nba_live_data():
                 )
                 st.table(odds_df)
 
+
             else:
                 st.markdown(
                     """
@@ -141,3 +134,9 @@ def display_nba_live_data():
 
 if __name__ == "__main__":
     display_nba_live_data()
+
+
+
+# ANOTHER SOURCE OF DATA
+# home_moneyline = moneyline_df[moneyline_df["home"] == home_full_name]["odds.home.moneyLine"].values
+# away_moneyline = moneyline_df[moneyline_df["away"] == away_full_name]["odds.away.moneyLine"].values

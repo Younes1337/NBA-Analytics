@@ -7,6 +7,7 @@ from Model.prediction import trans_data, extract_game_data
 # Set Streamlit page config for better visuals
 st.set_page_config(page_title="NBA Live Scores", page_icon="🏀", layout="wide")
 
+
 # Center the title of the app
 st.markdown(
     """
@@ -77,10 +78,16 @@ def display_nba_live_data():
 
                     home_moneyline_array = moneyline_df[moneyline_df["home"] == home_full_name]["odds.home.moneyLine"].values
                     away_moneyline_array = moneyline_df[moneyline_df["away"] == away_full_name]["odds.away.moneyLine"].values
-
+                    
                     # Extract scalar values if they exist
                     home_moneyline = round(float(home_moneyline_array[0]), 2) if len(home_moneyline_array) > 0 else None
                     away_moneyline = round(float(away_moneyline_array[0]), 2) if len(away_moneyline_array) > 0 else None
+                    
+                    if home_moneyline and away_moneyline:
+                        home_price = moneyline_to_probability(home_moneyline)
+                        away_price = moneyline_to_probability(away_moneyline)
+
+                    else: home_price, away_price = None, None    
 
 
                     st.markdown(
@@ -90,7 +97,7 @@ def display_nba_live_data():
                                 <div style="text-align: left; width: 45%;">
                                     <h3 style="margin: 10px 0; color: #4CAF50;">{home_full_name}</h3>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Score: <strong>{home_score}</strong></p>
-                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{home_moneyline}</strong></p>
+                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{home_price}</strong></p>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Win Probability: <strong>{f"{result[result['HomeName'] == home_teamTricode]['predicted_home_win_probability'].iloc[0] * 100:.1f}%" if result is not None and not result[result['HomeName'] == home_teamTricode].empty else "0.0%"}</strong></p>
                                 </div>
                                 <div style="text-align: center; font-size: 16px; color: #bbbbbb; width: 10%;">
@@ -99,7 +106,7 @@ def display_nba_live_data():
                                 <div style="text-align: right; width: 45%;">
                                     <h3 style="margin: 10px 0; color: #FF5722;">{away_full_name}</h3>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Score: <strong>{away_score}</strong></p>
-                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{away_moneyline}</strong></p>
+                                    <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Price: <strong>{away_price}</strong></p>
                                     <p style="margin: 5px 0; font-size: 16px; color: #dddddd;"> Win Probability: <strong>{f"{result[result['HomeName'] == home_teamTricode]['predicted_away_win_probability'].iloc[0] * 100:.1f}%" if result is not None and not result[result['HomeName'] == home_teamTricode].empty else "0.0%"}</strong></p>
                                 </div>
                             </div>
